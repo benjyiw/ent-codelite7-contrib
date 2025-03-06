@@ -51,6 +51,10 @@ type (
 		QueryField *FieldConfig `json:"QueryField,omitempty"`
 		// MutationInputs defines the input types for the mutation.
 		MutationInputs []MutationConfig `json:"MutationInputs,omitempty"`
+		// UseEnumNames can be used on `Enum` fields that use the `NamedValues` function to specify values.
+		// when true, the graphql enums will use the Name instead of the value. This is useful when the value
+		// is something that is not a valid graphql enum
+		UseEnumNames bool `json:"UseEnumNames,omitempty"`
 	}
 
 	// Directive to apply on the field/type.
@@ -427,6 +431,10 @@ func Mutations(inputs ...MutationOption) Annotation {
 	return Annotation{MutationInputs: a}
 }
 
+func UseEnumNames() Annotation {
+	return Annotation{UseEnumNames: true}
+}
+
 // Merge implements the schema.Merger interface.
 func (a Annotation) Merge(other schema.Annotation) schema.Annotation {
 	var ant Annotation
@@ -482,6 +490,7 @@ func (a Annotation) Merge(other schema.Annotation) schema.Annotation {
 		}
 		a.QueryField.merge(ant.QueryField)
 	}
+	a.UseEnumNames = ant.UseEnumNames
 	return a
 }
 

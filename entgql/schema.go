@@ -398,9 +398,19 @@ func (e *schemaGenerator) enumOrderByValues(t *gen.Type, gqlType string) (*ast.D
 
 func (e *schemaGenerator) buildFieldEnum(f *gen.Field, gqlType, goType string) (*ast.Definition, error) {
 	enumValues := make(ast.EnumValueList, 0, len(f.Enums))
+	ant, err := annotation(f.Annotations)
+	if err != nil {
+		return nil, err
+	}
+	var name string
 	for _, v := range f.Enums {
+		if ant.UseEnumNames {
+			name = v.Name
+		} else {
+			name = v.Value
+		}
 		enumValues = append(enumValues, &ast.EnumValueDefinition{
-			Name: v.Value,
+			Name: name,
 		})
 	}
 	return &ast.Definition{
