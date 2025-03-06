@@ -20,13 +20,13 @@ in the LICENSE file in the root directory of this source tree.
 			var {{ $f.Name }}GqlEnumToTypeMap = map[string]{{ $enum }} {
 			{{- range $e := $f.Enums }}
 				"{{ trimPrefix $e.Name $f.StructField }}": {{ $e.Name }},
-			{{ end }}
+			{{- end }}
 			}
 
 			var {{ $f.Name }}TypeToGqlEnum = map[{{ $enum }}]string {
 			{{- range $e := $f.Enums }}
 				{{ $e.Name }}: "{{ trimPrefix $e.Name $f.StructField }}",
-			{{ end }}
+			{{- end }}
 			}
 		{{- end }}
 		// MarshalGQL implements graphql.Marshaler interface.
