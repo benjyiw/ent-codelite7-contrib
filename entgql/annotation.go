@@ -53,7 +53,7 @@ type (
 		MutationInputs []MutationConfig `json:"MutationInputs,omitempty"`
 		// UseEnumNames can be used on `Enum` fields that use the `NamedValues` function to specify values.
 		// when true, the graphql enums will use the Name instead of the value. This is useful when the value
-		// is something that is not a valid graphql enum
+		// is something that is not a valid graphql enum.
 		UseEnumNames bool `json:"UseEnumNames,omitempty"`
 	}
 
