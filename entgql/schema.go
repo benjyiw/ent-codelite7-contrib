@@ -405,7 +405,7 @@ func (e *schemaGenerator) buildFieldEnum(f *gen.Field, gqlType, goType string) (
 	var name string
 	for _, v := range f.Enums {
 		if ant.UseEnumNames {
-			name = v.Name
+			name = strings.TrimPrefix(v.Name, f.StructField())
 		} else {
 			name = v.Value
 		}
