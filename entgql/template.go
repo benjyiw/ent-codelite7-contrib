@@ -95,6 +95,7 @@ var (
 		"nodePaginationNames": nodePaginationNames,
 		"orderFields":         orderFields,
 		"skipMode":            skipModeFromString,
+		"trimPrefix":          trimPrefix,
 	}
 
 	//go:embed template/*
@@ -552,6 +553,10 @@ func skipModeFromString(modes ...string) (SkipMode, error) {
 		}
 	}
 	return m, nil
+}
+
+func trimPrefix(source, prefix string) string {
+	return strings.TrimPrefix(source, prefix)
 }
 
 func isSkipMode(antSkip interface{}, m string) (bool, error) {
