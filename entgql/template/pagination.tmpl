@@ -238,6 +238,7 @@ type {{ $pager }} struct {
 	reverse bool
 	order {{ if $multiOrder }}[]{{ end }}*{{ $order }}
 	filter func(*{{ $query }}) (*{{ $query }}, error)
+	nullsOrder {{ if $multiOrder }}[]{{ end }}NullsOrderDirection
 }
 
 {{ $newPager := print "new" $name "Pager" -}}
