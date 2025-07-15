@@ -290,7 +290,7 @@ func (p *{{ $pager }}) applyCursors(query *{{ $query }}, after, before *Cursor) 
 		if p.reverse {
 			idDirection = entgql.OrderDirectionDesc
 		}
-		fields, directions, nullsDirections := make([]string, 0, len(p.order)), make([]OrderDirection, 0, len(p.order)), make([]nullsDirection, 0, len(p.order))
+		fields, directions, nullsDirections := make([]string, 0, len(p.order)), make([]OrderDirection, 0, len(p.order)), make([]NullsDirection, 0, len(p.order))
 		for _, o := range p.order {
 			fields = append(fields, o.Field.column)
 			direction := o.Direction
@@ -431,7 +431,7 @@ func (p *{{ $pager }}) orderExpr(query *{{ $node.QueryName }}) sql.Querier {
 				direction := o.Direction
 				nullsDirection := o.NullsDirection
 				if nullsDirection == "" {
-					nullsDirection = NullsLast
+					nullsDirection = entgql.NullsLast
 				}
 				if p.reverse {
 					direction = direction.Reverse()
@@ -451,7 +451,7 @@ func (p *{{ $pager }}) orderExpr(query *{{ $node.QueryName }}) sql.Querier {
 		direction := p.order.Direction
 		nullsDirection := p.order.NullsDirection
 		if nullsDirection == "" {
-			nullsDirection = NullsLast
+			nullsDirection = entgql.NullsLast
 		}
 		if p.reverse {
 			direction = direction.Reverse()
