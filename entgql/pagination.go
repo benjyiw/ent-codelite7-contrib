@@ -85,17 +85,17 @@ func (o OrderDirection) Reverse() OrderDirection {
 }
 
 // NullsOrderDirection defines the directions in which to order the Nulls of a list of items.
-type NullsOrderDirection string
+type NullsDirection string
 
 const (
 	// NullsOrderDirectionFirst specifies nulls to be ordered first
-	NullsFirst NullsOrderDirection = "First"
+	NullsFirst NullsDirection = "First"
 	// NullsOrderDirectionLast specifies nulls to be ordered last
-	NullsLast NullsOrderDirection = "Last"
+	NullsLast NullsDirection = "Last"
 )
 
 // Validate the order direction value.
-func (n NullsOrderDirection) Validate() error {
+func (n NullsDirection) Validate() error {
 	if n != NullsFirst && n != NullsLast {
 		return fmt.Errorf("%s is not a valid type NullsOrderDirection string", n)
 	}
@@ -103,12 +103,12 @@ func (n NullsOrderDirection) Validate() error {
 }
 
 // String implements fmt.Stringer interface.
-func (n NullsOrderDirection) String() string {
+func (n NullsDirection) String() string {
 	return string(n)
 }
 
 // OrderTermOption returns the OrderTermOption for setting the Nulls order direction.
-func (n NullsOrderDirection) OrderTermOption() sql.OrderTermOption {
+func (n NullsDirection) OrderTermOption() sql.OrderTermOption {
 	if n == NullsFirst {
 		return sql.OrderNullsFirst()
 	}
@@ -116,22 +116,22 @@ func (n NullsOrderDirection) OrderTermOption() sql.OrderTermOption {
 }
 
 // MarshalGQL implements graphql.Marshaler interface.
-func (n NullsOrderDirection) MarshalGQL(w io.Writer) {
+func (n NullsDirection) MarshalGQL(w io.Writer) {
 	io.WriteString(w, strconv.Quote(n.String()))
 }
 
 // UnmarshalGQL implements graphql.Unmarshaler interface.
-func (n *NullsOrderDirection) UnmarshalGQL(val interface{}) error {
+func (n *NullsDirection) UnmarshalGQL(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
 		return fmt.Errorf("Nulls order direction %T must be a string", val)
 	}
-	*n = NullsOrderDirection(str)
+	*n = NullsDirection(str)
 	return n.Validate()
 }
 
 // Reverse the direction.
-func (n NullsOrderDirection) Reverse() NullsOrderDirection {
+func (n NullsDirection) Reverse() NullsDirection {
 	if n == NullsLast {
 		return NullsFirst
 	}
@@ -221,11 +221,11 @@ func CursorsPredicate[T any](after, before *Cursor[T], idField, field string, di
 
 // MultiCursorOptions are the options for building the cursor predicates.
 type MultiCursorsOptions struct {
-	FieldID     string           			// ID field name.
-	DirectionID OrderDirection   			// ID field direction.
-	Fields      []string         			// OrderBy fields used by the cursor.
-	Directions  []OrderDirection 			// OrderBy directions used by the cursor.
-	Nulls 			[]NullsOrderDirection // OrderBy directions for Nulls
+	FieldID     		string           			// ID field name.
+	DirectionID 		OrderDirection   			// ID field direction.
+	Fields      		[]string         			// OrderBy fields used by the cursor.
+	Directions  		[]OrderDirection 			// OrderBy directions used by the cursor.
+	NullsDirections []NullsDirection 			// OrderBy directions for Nulls
 }
 
 // MultiCursorsPredicate returns a predicate that filters records by the given cursors.
@@ -263,9 +263,10 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 	if len(opts.Directions) != len(opts.Fields) {
 		return nil, fmt.Errorf("orderBy directions length %d do not match orderBy fields length %d", len(opts.Directions), len(opts.Fields))
 	}
-	if len(opts.Nulls) != len(opts.Fields) {
-		return nil, fmt.Errorf("nulls orderBy length %d do not match orderBy fields length %d", len(opts.Nulls), len(opts.Fields))
+	if opts.NullsDirections == nil {
+		opts.NullsDirections = make([]NullsDirection, len(opts.Fields))
 	}
+
 	// Ensure the row value is unique by adding
 	// the ID field, if not already present.
 	if slices.Index(opts.Fields, opts.FieldID) == -1 {
@@ -302,7 +303,7 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 			}
 			if opts.Directions[i] == OrderDirectionAsc {
 				if values[i] != nil {
-					if opts.Nulls[i] == NullsFirst {
+					if opts.NullsDirections[i] == NullsFirst {
 						// whens nulls are first, do not add them to the end with an OR sql.IsNull
 						ands = append(ands, sql.GT(s.C(column), values[i]))
 					} else {
@@ -314,7 +315,7 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 				}
 			} else {
 				if values[i] != nil {
-					if opts.Nulls[i] == NullsLast {
+					if opts.NullsDirections[i] == NullsLast {
 						// whens nulls are last, do not add them to the start with an OR sql.IsNull
 						ands = append(ands, sql.LT(s.C(column), values[i]))
 					} else {
