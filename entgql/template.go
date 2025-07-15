@@ -652,6 +652,11 @@ func (p *PaginationNames) OrderInputDef() *ast.Definition {
 				Type:        ast.NonNullNamedType(p.OrderField, nil),
 				Description: fmt.Sprintf("The field by which to order %s.", plural(p.Node)),
 			},
+			{
+				Name:        "nullsDirection",
+				Type:        ast.NamedType(NullsDirectionEnum, nil),
+				Description: "The direction to order null values.",
+      },
 		},
 	}
 }
