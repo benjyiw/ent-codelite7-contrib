@@ -263,8 +263,8 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 	if len(opts.Directions) != len(opts.Fields) {
 		return nil, fmt.Errorf("orderBy directions length %d do not match orderBy fields length %d", len(opts.Directions), len(opts.Fields))
 	}
-	if opts.NullsDirections == nil {
-		opts.NullsDirections = make([]NullsDirection, len(opts.Fields))
+	if len(opts.NullsDirections) != len(opts.Fields) {
+		return nil, fmt.Errorf("orderBy nulls directions length %d does not match orderBy fields length %d", len(opts.NullsDirections), len(opts.Fields),)
 	}
 
 	// Ensure the row value is unique by adding

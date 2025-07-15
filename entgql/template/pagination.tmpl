@@ -290,20 +290,24 @@ func (p *{{ $pager }}) applyCursors(query *{{ $query }}, after, before *Cursor) 
 		if p.reverse {
 			idDirection = entgql.OrderDirectionDesc
 		}
-		fields, directions := make([]string, 0, len(p.order)), make([]OrderDirection, 0, len(p.order))
+		fields, directions, nullsDirections := make([]string, 0, len(p.order)), make([]OrderDirection, 0, len(p.order)), make([]nullsDirection, 0, len(p.order))
 		for _, o := range p.order {
 			fields = append(fields, o.Field.column)
 			direction := o.Direction
+			nullsDirection := o.NullsDirection
 			if p.reverse {
 				direction = direction.Reverse()
+				nullsDirection = nullsDirection.Reverse()
 			}
 			directions = append(directions, direction)
+			nullsDirections = append(nullsDirections, nullsDirection)
 		}
 		predicates, err := entgql.MultiCursorsPredicate(after, before, &entgql.MultiCursorsOptions{
 			FieldID: {{ $defaultOrder }}.Field.column,
 			DirectionID: idDirection,
 			Fields: fields,
 			Directions: directions,
+			NullsDirections: nullsDirections,
 		})
 		if err != nil {
 			return nil, err
