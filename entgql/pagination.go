@@ -221,11 +221,11 @@ func CursorsPredicate[T any](after, before *Cursor[T], idField, field string, di
 
 // MultiCursorOptions are the options for building the cursor predicates.
 type MultiCursorsOptions struct {
-	FieldID     		string           			// ID field name.
-	DirectionID 		OrderDirection   			// ID field direction.
-	Fields      		[]string         			// OrderBy fields used by the cursor.
-	Directions  		[]OrderDirection 			// OrderBy directions used by the cursor.
-	NullsDirections []NullsDirection 			// OrderBy directions for Nulls
+	FieldID         string           // ID field name.
+	DirectionID     OrderDirection   // ID field direction.
+	Fields          []string         // OrderBy fields used by the cursor.
+	Directions      []OrderDirection // OrderBy directions used by the cursor.
+	NullsDirections []NullsDirection // OrderBy directions for Nulls
 }
 
 // MultiCursorsPredicate returns a predicate that filters records by the given cursors.
@@ -264,7 +264,7 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 		return nil, fmt.Errorf("orderBy directions length %d do not match orderBy fields length %d", len(opts.Directions), len(opts.Fields))
 	}
 	if len(opts.NullsDirections) != len(opts.Fields) {
-		return nil, fmt.Errorf("orderBy nulls directions length %d does not match orderBy fields length %d", len(opts.NullsDirections), len(opts.Fields),)
+		return nil, fmt.Errorf("orderBy nulls directions length %d does not match orderBy fields length %d", len(opts.NullsDirections), len(opts.Fields))
 	}
 
 	// Ensure the row value is unique by adding
@@ -302,29 +302,28 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 					ands = append(ands, sql.EQ(s.C(column), values[j]))
 				}
 			}
-			if opts.Directions[i] == OrderDirectionAsc {
-				if values[i] != nil {
-					if opts.NullsDirections[i] == NullsFirst {
-						// whens nulls are first, do not add them to the end with an OR sql.IsNull
-						ands = append(ands, sql.GT(s.C(column), values[i]))
-					} else {
-						ands = append(ands, sql.Or(
-							sql.IsNull(s.C(column)),
-							sql.GT(s.C(column), values[i]),
-						))
-					}
+			if values[i] == nil {
+				// Explicitly include nulls for this field when the cursor is nil
+				ands = append(ands, sql.IsNull(s.C(column)))
+			} else if opts.Directions[i] == OrderDirectionAsc {
+				if opts.NullsDirections[i] == NullsFirst {
+					// whens nulls are first, do not add them to the end with an OR sql.IsNull
+					ands = append(ands, sql.GT(s.C(column), values[i]))
+				} else {
+					ands = append(ands, sql.Or(
+						sql.IsNull(s.C(column)),
+						sql.GT(s.C(column), values[i]),
+					))
 				}
 			} else {
-				if values[i] != nil {
-					if opts.NullsDirections[i] == NullsLast {
-						// whens nulls are last, do not add them to the start with an OR sql.IsNull
-						ands = append(ands, sql.LT(s.C(column), values[i]))
-					} else {
-						ands = append(ands, sql.Or(
-							sql.IsNull(s.C(column)),
-							sql.LT(s.C(column), values[i]),
-						))
-					}
+				if opts.NullsDirections[i] == NullsLast {
+					// whens nulls are last, do not add them to the start with an OR sql.IsNull
+					ands = append(ands, sql.LT(s.C(column), values[i]))
+				} else {
+					ands = append(ands, sql.Or(
+						sql.IsNull(s.C(column)),
+						sql.LT(s.C(column), values[i]),
+					))
 				}
 			}
 			if len(ands) > 0 {
