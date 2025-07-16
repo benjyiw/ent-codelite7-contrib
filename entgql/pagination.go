@@ -273,6 +273,7 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 		values = append(values, cursor.ID)
 		opts.Fields = append(opts.Fields, opts.FieldID)
 		opts.Directions = append(opts.Directions, opts.DirectionID)
+		opts.NullsDirections = append(opts.NullsDirections, NullsLast)
 	}
 	return func(s *sql.Selector) {
 		// getColumnNameForField gets the name for the term and considers non-ambigous matching of
