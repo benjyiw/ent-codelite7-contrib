@@ -41,7 +41,7 @@ const (
 	// RelayPageInfo is the name of the PageInfo type
 	RelayPageInfo = "PageInfo"
 	// NullsDirectionEnum is the name of enum NullsDirection
-	NullsDirectionEnum = "NullsDirectionEnum"
+	NullsDirectionEnum = "NullsDirection"
 )
 
 var (
