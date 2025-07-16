@@ -898,6 +898,9 @@ func builtinTypes() []*ast.Definition {
 									   Description: "Null values come last.",
 							   },
 					   },
+					   Directives: []*ast.Directive{
+									goModel("github.com/MatthewsREIS/gemini/service-api-go/api-graphql/src/graph/gql_pagination.NullsDirection"),
+					   },
 			   },
 	   }
 }
