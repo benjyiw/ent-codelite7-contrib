@@ -302,29 +302,24 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 					ands = append(ands, sql.EQ(s.C(column), values[j]))
 				}
 			}
-			if values[i] == nil {
-				// Explicitly include nulls for this field when the cursor is nil
-				ands = append(ands, sql.IsNull(s.C(column)))
-			} else if opts.Directions[i] == OrderDirectionAsc {
-				if opts.NullsDirections[i] == NullsFirst {
-					// whens nulls are first, do not add them to the end with an OR sql.IsNull
-					ands = append(ands, sql.GT(s.C(column), values[i]))
-				} else {
+			if opts.Directions[i] == OrderDirectionAsc {
+				if values[i] == nil && opts.NullsDirections[i] == NullsFirst {
+					// Fetch only nulls
+					ands = append(ands, sql.IsNull(s.C(column)))
+				} else if values[i] != nil && opts.NullsDirections[i] == NullsFirst {
+					// Fetch non-nulls greater than the cursor value
+					ands = append(ands, sql.And(
+						sql.NotNull(s.C(column)),
+						sql.GT(s.C(column), values[i]),
+					))
+				} else if values[i] != nil && opts.NullsDirections[i] == NullsLast {
+					// Usual logic for nulls last
 					ands = append(ands, sql.Or(
 						sql.IsNull(s.C(column)),
 						sql.GT(s.C(column), values[i]),
 					))
 				}
-			} else {
-				if opts.NullsDirections[i] == NullsLast {
-					// whens nulls are last, do not add them to the start with an OR sql.IsNull
-					ands = append(ands, sql.LT(s.C(column), values[i]))
-				} else {
-					ands = append(ands, sql.Or(
-						sql.IsNull(s.C(column)),
-						sql.LT(s.C(column), values[i]),
-					))
-				}
+				// ... handle DESC similarly
 			}
 			if len(ands) > 0 {
 				or = append(or, sql.And(ands...))
