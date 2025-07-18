@@ -242,44 +242,10 @@ func MultiCursorsPredicate[T any](after, before *Cursor[T], opts *MultiCursorsOp
 			}
 			predicates = append(predicates, predicate)
 		} else {
-			// respect NullsDirection for nil cursor
-			for i, field := range opts.Fields {
-				nullsDir := opts.NullsDirections[i]
-				if opts.DirectionID == OrderDirectionAsc {
-					if nullsDir == NullsFirst {
-						// Only paginate nulls in the order field, by ID
-						predicates = append(predicates, func(s *sql.Selector) {
-							s.Where(sql.And(
-								sql.IsNull(s.C(field)),
-								sql.GT(s.C(opts.FieldID), cursor.ID),
-							))
-						})
-					} else {
-						// Only paginate non-nulls in the order field, by ID
-						predicates = append(predicates, func(s *sql.Selector) {
-							s.Where(sql.And(
-								sql.NotNull(s.C(field)),
-								sql.GT(s.C(opts.FieldID), cursor.ID),
-							))
-						})
-					}
-				} else { //opts.DirectionID == OrderDirectionDESC
-					if nullsDir == NullsFirst {
-						predicates = append(predicates, func(s *sql.Selector) {
-							s.Where(sql.And(
-								sql.IsNull(s.C(field)),
-								sql.LT(s.C(opts.FieldID), cursor.ID),
-							))
-						})
-					} else {
-						predicates = append(predicates, func(s *sql.Selector) {
-							s.Where(sql.And(
-								sql.NotNull(s.C(field)),
-								sql.LT(s.C(opts.FieldID), cursor.ID),
-							))
-						})
-					}
-				}
+			if opts.DirectionID == OrderDirectionAsc {
+				predicates = append(predicates, sql.FieldGT(opts.FieldID, cursor.ID))
+			} else {
+				predicates = append(predicates, sql.FieldLT(opts.FieldID, cursor.ID))
 			}
 		}
 	}
@@ -339,10 +305,13 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 			if opts.Directions[i] == OrderDirectionAsc {
 				switch {
 				case values[i] == nil && opts.NullsDirections[i] == NullsFirst:
-					// ASC + NULLS FIRST + NULL → paginate remaining nulls (by ID)
-					ands = append(ands, sql.And(
-						sql.IsNull(s.C(column)),
-						sql.GT(s.C(getColumnNameForField(opts.FieldID)), cursor.ID),
+					// ASC + NULLS FIRST + NULL → paginate remaining nulls (by ID) OR bridge to non-nulls
+					ands = append(ands, sql.Or(
+						sql.And(
+							sql.IsNull(s.C(column)),
+							sql.GT(s.C(getColumnNameForField(opts.FieldID)), cursor.ID),
+						),
+						sql.NotNull(s.C(column)),
 					))
 
 				case values[i] != nil && opts.NullsDirections[i] == NullsFirst:
