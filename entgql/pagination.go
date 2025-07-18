@@ -303,23 +303,65 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 				}
 			}
 			if opts.Directions[i] == OrderDirectionAsc {
-				if values[i] == nil && opts.NullsDirections[i] == NullsFirst {
-					// Fetch only nulls
-					ands = append(ands, sql.IsNull(s.C(column)))
-				} else if values[i] != nil && opts.NullsDirections[i] == NullsFirst {
-					// Fetch non-nulls greater than the cursor value
+				switch {
+				case values[i] == nil && opts.NullsDirections[i] == NullsFirst:
+					// ASC + NULLS FIRST + NULL → paginate remaining nulls (by ID)
+					ands = append(ands, sql.And(
+						sql.IsNull(s.C(column)),
+						sql.GT(s.C(getColumnNameForField(opts.FieldID)), cursor.ID),
+					))
+
+				case values[i] != nil && opts.NullsDirections[i] == NullsFirst:
+					// ASC + NULLS FIRST + non-null → skip nulls, fetch greater non-nulls
 					ands = append(ands, sql.And(
 						sql.NotNull(s.C(column)),
 						sql.GT(s.C(column), values[i]),
 					))
-				} else if values[i] != nil && opts.NullsDirections[i] == NullsLast {
-					// Usual logic for nulls last
-					ands = append(ands, sql.Or(
+
+				case values[i] == nil && opts.NullsDirections[i] == NullsLast:
+					// ASC + NULLS LAST + NULL → fetch remaining nulls (ID tie-break)
+					ands = append(ands, sql.And(
 						sql.IsNull(s.C(column)),
+						sql.GT(s.C(getColumnNameForField(opts.FieldID)), cursor.ID),
+					))
+
+				case values[i] != nil && opts.NullsDirections[i] == NullsLast:
+					// ASC + NULLS LAST + value → fetch greater values and nulls
+					ands = append(ands, sql.Or(
 						sql.GT(s.C(column), values[i]),
+						sql.IsNull(s.C(column)),
 					))
 				}
-				// ... handle DESC similarly
+			} else { // OrderDirectionDesc
+				switch {
+				case values[i] == nil && opts.NullsDirections[i] == NullsFirst:
+					// DESC + NULLS FIRST + NULL → paginate remaining nulls (by ID, descending)
+					ands = append(ands, sql.And(
+						sql.IsNull(s.C(column)),
+						sql.LT(s.C(getColumnNameForField(opts.FieldID)), cursor.ID),
+					))
+
+				case values[i] != nil && opts.NullsDirections[i] == NullsFirst:
+					// DESC + NULLS FIRST + value → fetch lesser values or nulls
+					ands = append(ands, sql.Or(
+						sql.LT(s.C(column), values[i]),
+						sql.IsNull(s.C(column)),
+					))
+
+				case values[i] == nil && opts.NullsDirections[i] == NullsLast:
+					// DESC + NULLS LAST + NULL → paginate remaining nulls (by ID)
+					ands = append(ands, sql.And(
+						sql.IsNull(s.C(column)),
+						sql.GT(s.C(getColumnNameForField(opts.FieldID)), cursor.ID),
+					))
+
+				case values[i] != nil && opts.NullsDirections[i] == NullsLast:
+					// DESC + NULLS LAST + value → skip nulls, fetch lesser non-nulls
+					ands = append(ands, sql.And(
+						sql.NotNull(s.C(column)),
+						sql.LT(s.C(column), values[i]),
+					))
+				}
 			}
 			if len(ands) > 0 {
 				or = append(or, sql.And(ands...))
