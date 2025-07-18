@@ -242,10 +242,44 @@ func MultiCursorsPredicate[T any](after, before *Cursor[T], opts *MultiCursorsOp
 			}
 			predicates = append(predicates, predicate)
 		} else {
-			if opts.DirectionID == OrderDirectionAsc {
-				predicates = append(predicates, sql.FieldGT(opts.FieldID, cursor.ID))
-			} else {
-				predicates = append(predicates, sql.FieldLT(opts.FieldID, cursor.ID))
+			// respect NullsDirection for nil cursor
+			for i, field := range opts.Fields {
+				nullsDir := opts.NullsDirections[i]
+				if opts.DirectionID == OrderDirectionAsc {
+					if nullsDir == NullsFirst {
+						// Only paginate nulls in the order field, by ID
+						predicates = append(predicates, func(s *sql.Selector) {
+							s.Where(sql.And(
+								sql.IsNull(s.C(field)),
+								sql.GT(s.C(opts.FieldID), cursor.ID),
+							))
+						})
+					} else {
+						// Only paginate non-nulls in the order field, by ID
+						predicates = append(predicates, func(s *sql.Selector) {
+							s.Where(sql.And(
+								sql.NotNull(s.C(field)),
+								sql.GT(s.C(opts.FieldID), cursor.ID),
+							))
+						})
+					}
+				} else { // DESC
+					if nullsDir == NullsFirst {
+						predicates = append(predicates, func(s *sql.Selector) {
+							s.Where(sql.And(
+								sql.IsNull(s.C(field)),
+								sql.LT(s.C(opts.FieldID), cursor.ID),
+							))
+						})
+					} else {
+						predicates = append(predicates, func(s *sql.Selector) {
+							s.Where(sql.And(
+								sql.NotNull(s.C(field)),
+								sql.LT(s.C(opts.FieldID), cursor.ID),
+							))
+						})
+					}
+				}
 			}
 		}
 	}
