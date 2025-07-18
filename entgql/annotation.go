@@ -490,7 +490,9 @@ func (a Annotation) Merge(other schema.Annotation) schema.Annotation {
 		}
 		a.QueryField.merge(ant.QueryField)
 	}
-	a.UseEnumNames = ant.UseEnumNames
+	if ant.UseEnumNames {
+		a.UseEnumNames = true
+	}
 	return a
 }
 
