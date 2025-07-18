@@ -263,7 +263,7 @@ func MultiCursorsPredicate[T any](after, before *Cursor[T], opts *MultiCursorsOp
 							))
 						})
 					}
-				} else { // DESC
+				} else { //opts.DirectionID == OrderDirectionDESC
 					if nullsDir == NullsFirst {
 						predicates = append(predicates, func(s *sql.Selector) {
 							s.Where(sql.And(
