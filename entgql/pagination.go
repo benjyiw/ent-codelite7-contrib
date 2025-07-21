@@ -84,6 +84,60 @@ func (o OrderDirection) Reverse() OrderDirection {
 	return OrderDirectionDesc
 }
 
+// NullsOrderDirection defines the directions in which to order the Nulls of a list of items.
+type NullsDirection string
+
+const (
+	// NullsOrderDirectionFirst specifies nulls to be ordered first
+	NullsFirst NullsDirection = "FIRST"
+	// NullsOrderDirectionLast specifies nulls to be ordered last
+	NullsLast NullsDirection = "LAST"
+)
+
+// Validate the order direction value.
+func (n NullsDirection) Validate() error {
+	if n != NullsFirst && n != NullsLast {
+		return fmt.Errorf("%s is not a valid type NullsOrderDirection string", n)
+	}
+	return nil
+}
+
+// String implements fmt.Stringer interface.
+func (n NullsDirection) String() string {
+	return string(n)
+}
+
+// OrderTermOption returns the OrderTermOption for setting the Nulls order direction.
+func (n NullsDirection) OrderTermOption() sql.OrderTermOption {
+	if n == NullsFirst {
+		return sql.OrderNullsFirst()
+	}
+	return sql.OrderNullsLast()
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (n NullsDirection) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(n.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (n *NullsDirection) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("Nulls order direction %T must be a string", val)
+	}
+	*n = NullsDirection(str)
+	return n.Validate()
+}
+
+// Reverse the direction.
+func (n NullsDirection) Reverse() NullsDirection {
+	if n == NullsLast {
+		return NullsFirst
+	}
+	return NullsLast
+}
+
 // PageInfo of a connection type.
 type PageInfo[T any] struct {
 	HasNextPage     bool       `json:"hasNextPage"`
@@ -167,10 +221,11 @@ func CursorsPredicate[T any](after, before *Cursor[T], idField, field string, di
 
 // MultiCursorOptions are the options for building the cursor predicates.
 type MultiCursorsOptions struct {
-	FieldID     string           // ID field name.
-	DirectionID OrderDirection   // ID field direction.
-	Fields      []string         // OrderBy fields used by the cursor.
-	Directions  []OrderDirection // OrderBy directions used by the cursor.
+	FieldID         string           // ID field name.
+	DirectionID     OrderDirection   // ID field direction.
+	Fields          []string         // OrderBy fields used by the cursor.
+	Directions      []OrderDirection // OrderBy directions used by the cursor.
+	NullsDirections []NullsDirection // OrderBy directions used by the Nulls.
 }
 
 // MultiCursorsPredicate returns a predicate that filters records by the given cursors.
@@ -208,12 +263,17 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 	if len(opts.Directions) != len(opts.Fields) {
 		return nil, fmt.Errorf("orderBy directions length %d do not match orderBy fields length %d", len(opts.Directions), len(opts.Fields))
 	}
+	if len(opts.NullsDirections) != len(opts.Fields) {
+		return nil, fmt.Errorf("orderBy nulls directions length %d does not match orderBy fields length %d", len(opts.NullsDirections), len(opts.Fields))
+	}
+
 	// Ensure the row value is unique by adding
 	// the ID field, if not already present.
 	if slices.Index(opts.Fields, opts.FieldID) == -1 {
 		values = append(values, cursor.ID)
 		opts.Fields = append(opts.Fields, opts.FieldID)
 		opts.Directions = append(opts.Directions, opts.DirectionID)
+		opts.NullsDirections = append(opts.NullsDirections, NullsLast)
 	}
 	return func(s *sql.Selector) {
 		// getColumnNameForField gets the name for the term and considers non-ambigous matching of
@@ -242,34 +302,66 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 					ands = append(ands, sql.EQ(s.C(column), values[j]))
 				}
 			}
-			// TODO: Whenever nulls last is made configurable, we'll want to change this behavior. Sorting works differently
-			// when nulls last isn't specified. This code works for nulls last because that's the behavior we want, but before
-			// we can merge it back we need to spend some time making it configurable. Without nulls first nulls will appear
-			// first when in desc order, and last when ordering by asc order. So when we can expect to have values appear first
-			// and nulls appear second, we need to ad an `or x is null` when the cursor has a value. When using `nulls last`
-			// this is always the case, nulls are always last. When not using nulls last then we have to account for the
-			// possibility of nulls appearing first when sorting in descending order, which would mean we have to add an
-			// `or x is not null` so that we don't stop paginating early. This conflicts with the behavior we want with
-			// nulls last.
 			if opts.Directions[i] == OrderDirectionAsc {
-				if values[i] != nil {
-					// we have a value and we're sorting in ascending order, that means that we need to add `or x is null` so that
-					// pagination doesn't stop early, because > null doesn't work. If we add support for `nulls first` then this
-					// will need to change to accomodate that.
+				switch {
+				case values[i] == nil && opts.NullsDirections[i] == NullsFirst:
+					// ASC + NULLS FIRST + NULL → paginate remaining nulls (by ID) OR bridge to non-nulls
 					ands = append(ands, sql.Or(
-						sql.IsNull(s.C(column)),
+						sql.And(
+							sql.IsNull(s.C(column)),
+							sql.GT(s.C(getColumnNameForField(opts.FieldID)), cursor.ID),
+						),
+						sql.NotNull(s.C(column)),
+					))
+
+				case values[i] != nil && opts.NullsDirections[i] == NullsFirst:
+					// ASC + NULLS FIRST + non-null → skip nulls, fetch greater non-nulls
+					ands = append(ands, sql.And(
+						sql.NotNull(s.C(column)),
 						sql.GT(s.C(column), values[i]),
 					))
-				}
-			} else {
-				// TODO: Something like this will be needed when we make nulls last configurable, since if nulls are not last,
-				// they appear first when sorting in descending order
-				//if values[i] == nil {
-				//	or = append(or, sql.NotNull(s.C(opts.Fields[i])))
-				//} else {....
-				if values[i] != nil {
-					ands = append(ands, sql.Or(
+
+				case values[i] == nil && opts.NullsDirections[i] == NullsLast:
+					// ASC + NULLS LAST + NULL → fetch remaining nulls (ID tie-break)
+					ands = append(ands, sql.And(
 						sql.IsNull(s.C(column)),
+						sql.GT(s.C(getColumnNameForField(opts.FieldID)), cursor.ID),
+					))
+
+				case values[i] != nil && opts.NullsDirections[i] == NullsLast:
+					// ASC + NULLS LAST + value → fetch greater values and nulls
+					ands = append(ands, sql.Or(
+						sql.GT(s.C(column), values[i]),
+						sql.IsNull(s.C(column)),
+					))
+				}
+			} else { // OrderDirectionDesc
+				switch {
+				case values[i] == nil && opts.NullsDirections[i] == NullsFirst:
+					// DESC + NULLS FIRST + NULL → paginate remaining nulls (by ID, descending)
+					ands = append(ands, sql.And(
+						sql.IsNull(s.C(column)),
+						sql.LT(s.C(getColumnNameForField(opts.FieldID)), cursor.ID),
+					))
+
+				case values[i] != nil && opts.NullsDirections[i] == NullsFirst:
+					// DESC + NULLS FIRST + value → fetch lesser values or nulls
+					ands = append(ands, sql.Or(
+						sql.LT(s.C(column), values[i]),
+						sql.IsNull(s.C(column)),
+					))
+
+				case values[i] == nil && opts.NullsDirections[i] == NullsLast:
+					// DESC + NULLS LAST + NULL → paginate remaining nulls (by ID)
+					ands = append(ands, sql.And(
+						sql.IsNull(s.C(column)),
+						sql.GT(s.C(getColumnNameForField(opts.FieldID)), cursor.ID),
+					))
+
+				case values[i] != nil && opts.NullsDirections[i] == NullsLast:
+					// DESC + NULLS LAST + value → skip nulls, fetch lesser non-nulls
+					ands = append(ands, sql.And(
+						sql.NotNull(s.C(column)),
 						sql.LT(s.C(column), values[i]),
 					))
 				}

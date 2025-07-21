@@ -40,6 +40,8 @@ const (
 	RelayNode = "Node"
 	// RelayPageInfo is the name of the PageInfo type
 	RelayPageInfo = "PageInfo"
+	// NullsDirectionEnum is the name of enum NullsDirection
+	NullsDirectionEnum = "NullsDirection"
 )
 
 var (
@@ -866,23 +868,38 @@ func entGoType(name, pkg string) string {
 }
 
 func builtinTypes() []*ast.Definition {
-	return []*ast.Definition{
-		{
-			Name:        OrderDirectionEnum,
-			Kind:        ast.Enum,
-			Description: "Possible directions in which to order a list of items when provided an `orderBy` argument.",
-			EnumValues: []*ast.EnumValueDefinition{
-				{
-					Name:        "ASC",
-					Description: "Specifies an ascending order for a given `orderBy` argument.",
-				},
-				{
-					Name:        "DESC",
-					Description: "Specifies a descending order for a given `orderBy` argument.",
-				},
-			},
-		},
-	}
+	   return []*ast.Definition{
+			   {
+					   Name:        OrderDirectionEnum,
+					   Kind:        ast.Enum,
+					   Description: "Possible directions in which to order a list of items when provided an `orderBy` argument.",
+					   EnumValues: []*ast.EnumValueDefinition{
+							   {
+									   Name:        "ASC",
+									   Description: "Specifies an ascending order for a given `orderBy` argument.",
+							   },
+							   {
+									   Name:        "DESC",
+									   Description: "Specifies a descending order for a given `orderBy` argument.",
+							   },
+					   },
+			   },
+			   {
+					   Name:        NullsDirectionEnum,
+					   Kind:        ast.Enum,
+					   Description: "Possible directions in which to order null values when provided an `orderBy` argument.",
+					   EnumValues: []*ast.EnumValueDefinition{
+							   {
+									   Name:        "FIRST",
+									   Description: "Specifies that null values are ordered first when sorting with an `orderBy` argument.",
+							   },
+							   {
+									   Name:        "LAST",
+									   Description: "Specifies that null values are ordered last when sorting with an `orderBy` argument.",
+							   },
+					   },
+			   },
+	   }
 }
 
 func relayBuiltinQueryFields() ast.FieldList {
