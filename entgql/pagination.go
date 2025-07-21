@@ -89,9 +89,9 @@ type NullsDirection string
 
 const (
 	// NullsOrderDirectionFirst specifies nulls to be ordered first
-	NullsFirst NullsDirection = "First"
+	NullsFirst NullsDirection = "FIRST"
 	// NullsOrderDirectionLast specifies nulls to be ordered last
-	NullsLast NullsDirection = "Last"
+	NullsLast NullsDirection = "LAST"
 )
 
 // Validate the order direction value.
@@ -225,7 +225,7 @@ type MultiCursorsOptions struct {
 	DirectionID     OrderDirection   // ID field direction.
 	Fields          []string         // OrderBy fields used by the cursor.
 	Directions      []OrderDirection // OrderBy directions used by the cursor.
-	NullsDirections []NullsDirection // OrderBy directions for Nulls
+	NullsDirections []NullsDirection // OrderBy directions used by the Nulls.
 }
 
 // MultiCursorsPredicate returns a predicate that filters records by the given cursors.

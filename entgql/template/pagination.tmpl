@@ -438,7 +438,7 @@ func (p *{{ $pager }}) orderExpr(query *{{ $node.QueryName }}) sql.Querier {
 					nullsDirection = nullsDirection.Reverse()
 				}
 				b.Ident(o.Field.column).Pad().WriteString(string(direction))
-				b.Pad().WriteString(" NULLS ").WriteString(string(nullsDirection))
+				b.Pad().WriteString("NULLS").Pad().WriteString(string(nullsDirection))
 				b.Comma()
 			}
 			direction := entgql.OrderDirectionAsc
@@ -474,7 +474,7 @@ func (p *{{ $pager }}) orderExpr(query *{{ $node.QueryName }}) sql.Querier {
 		{{- end }}
 		return sql.ExprFunc(func(b *sql.Builder) {
 			b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
-			b.Pad().WriteString(" NULLS ").WriteString(string(nullsDirection))
+			b.Pad().WriteString("NULLS").Pad().WriteString(string(nullsDirection))
 			if p.order.Field != {{ $defaultOrder }}.Field {
 				b.Comma().Ident({{ $defaultOrder }}.Field.column).Pad().WriteString(string(direction))
 			}

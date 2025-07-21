@@ -890,12 +890,12 @@ func builtinTypes() []*ast.Definition {
 					   Description: "Possible directions in which to order null values when provided an `orderBy` argument.",
 					   EnumValues: []*ast.EnumValueDefinition{
 							   {
-									   Name:        "First",
-									   Description: "Null values come first.",
+									   Name:        "FIRST",
+									   Description: "Specifies that null values are ordered first when sorting with an `orderBy` argument.",
 							   },
 							   {
-									   Name:        "Last",
-									   Description: "Null values come last.",
+									   Name:        "LAST",
+									   Description: "Specifies that null values are ordered last when sorting with an `orderBy` argument.",
 							   },
 					   },
 			   },
