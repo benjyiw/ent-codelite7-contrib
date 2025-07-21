@@ -28,6 +28,10 @@ input CategoryOrder {
   The field by which to order Categories.
   """
   field: CategoryOrderField!
+  """
+  The direction to order null values.
+  """
+  nullsDirection: NullsDirection
 }
 """
 Properties by which Category connections can be ordered.
@@ -43,7 +47,8 @@ enum CategoryOrderField {
 """
 CategoryStatus is enum for the field status
 """
-enum CategoryStatus @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent/category.Status") {
+enum CategoryStatus
+  @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent/category.Status") {
   ENABLED
   DISABLED
 }
@@ -98,7 +103,8 @@ type Friendship {
   user: User!
   friend: User!
 }
-type Group implements NamedNode @hasPermissions(permissions: ["ADMIN","MODERATOR"]) {
+type Group implements NamedNode
+  @hasPermissions(permissions: ["ADMIN", "MODERATOR"]) {
   id: ID!
   name: String!
   users: [User!]
@@ -126,6 +132,10 @@ input OneToManyOrder {
   The field by which to order OneToManies.
   """
   field: OneToManyOrderField!
+  """
+  The direction to order null values.
+  """
+  nullsDirection: NullsDirection
 }
 """
 Properties by which OneToMany connections can be ordered.
@@ -133,7 +143,8 @@ Properties by which OneToMany connections can be ordered.
 enum OneToManyOrderField {
   NAME
 }
-type Organization @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent.Workspace") {
+type Organization
+  @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent.Workspace") {
   id: ID!
   name: String!
 }
@@ -185,6 +196,10 @@ input TodoOrder {
   The field by which to order Todos.
   """
   field: TodoOrderField!
+  """
+  The direction to order null values.
+  """
+  nullsDirection: NullsDirection
 }
 """
 Properties by which Todo connections can be ordered.
@@ -201,7 +216,8 @@ enum TodoOrderField {
 """
 TodoStatus is enum for the field status
 """
-enum TodoStatus @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent/todo.Status") {
+enum TodoStatus
+  @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent/todo.Status") {
   IN_PROGRESS
   COMPLETED
   PENDING
@@ -307,6 +323,10 @@ input UserOrder {
   The field by which to order Users.
   """
   field: UserOrderField!
+  """
+  The direction to order null values.
+  """
+  nullsDirection: NullsDirection
 }
 """
 Properties by which User connections can be ordered.
