@@ -200,8 +200,7 @@ enum CategoryOrderField {
 """
 CategoryStatus is enum for the field status
 """
-enum CategoryStatus
-  @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent/category.Status") {
+enum CategoryStatus @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent/category.Status") {
   ENABLED
   DISABLED
 }
@@ -409,8 +408,7 @@ input FriendshipWhereInput {
   createdAtLT: Time
   createdAtLTE: Time
 }
-type Group implements Node & NamedNode
-  @hasPermissions(permissions: ["ADMIN", "MODERATOR"]) {
+type Group implements Node & NamedNode @hasPermissions(permissions: ["ADMIN","MODERATOR"]) {
   id: ID!
   name: String!
   users(
@@ -644,8 +642,7 @@ input OneToManyWhereInput {
   hasChildren: Boolean
   hasChildrenWith: [OneToManyWhereInput!]
 }
-type Organization implements Node
-  @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent.Workspace") {
+type Organization implements Node @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent.Workspace") {
   id: ID!
   name: String!
 }
@@ -1031,8 +1028,7 @@ enum TodoOrderField {
 """
 TodoStatus is enum for the field status
 """
-enum TodoStatus
-  @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent/todo.Status") {
+enum TodoStatus @goModel(model: "entgo.io/contrib/entgql/internal/todo/ent/todo.Status") {
   IN_PROGRESS
   COMPLETED
   PENDING
