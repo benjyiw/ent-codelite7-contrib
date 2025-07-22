@@ -302,6 +302,9 @@ func multiPredicate[T any](cursor *Cursor[T], opts *MultiCursorsOptions) (func(*
 					ands = append(ands, sql.EQ(s.C(column), values[j]))
 				}
 			}
+			if opts.NullsDirections[i] == "" {
+    		opts.NullsDirections[i] = NullsLast
+			}
 			if opts.Directions[i] == OrderDirectionAsc {
 				switch {
 				case values[i] == nil && opts.NullsDirections[i] == NullsFirst:
